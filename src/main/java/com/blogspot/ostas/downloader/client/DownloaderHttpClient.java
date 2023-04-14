@@ -1,0 +1,73 @@
+package com.blogspot.ostas.downloader.client;
+
+import com.blogspot.ostas.downloader.client.exception.NoContentLengthException;
+import com.blogspot.ostas.downloader.client.exception.NoRangeStreamException;
+import com.blogspot.ostas.downloader.client.exception.NotExpectedStatusCodeException;
+import com.blogspot.ostas.downloader.service.FileService;
+import com.blogspot.ostas.downloader.service.model.Chunk;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+@Data
+@Component
+@RequiredArgsConstructor
+public class DownloaderHttpClient {
+
+    private final FileService fileService;
+
+    private final HttpClient httpClient;
+
+    private String url;
+
+    public long contentLength() {
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+        try {
+            HttpResponse<Void> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
+            return response.headers()
+                    .firstValueAsLong("Content-Length")
+                    .orElseThrow(() -> new RuntimeException("Content length header not set"));
+        } catch (IOException e) {
+            throw new NoContentLengthException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return -1;
+    }
+
+    public InputStream inputStreamOf(Chunk chunk) {
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Range", "bytes=%s-%s".formatted(chunk.getStart(), chunk.getEnd()))
+                .GET()
+                .build();
+        try {
+            HttpResponse<InputStream> httpResponse = httpClient.send(httpRequest,
+                    HttpResponse.BodyHandlers.ofInputStream());
+            int statusCode = httpResponse.statusCode();
+            if (!(statusCode == 206 || statusCode == 200))
+                throw new NotExpectedStatusCodeException("Not expected status code %s".formatted(statusCode), statusCode);
+            return httpResponse.body();
+        } catch (IOException e) {
+            throw new NoRangeStreamException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return null;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+}
