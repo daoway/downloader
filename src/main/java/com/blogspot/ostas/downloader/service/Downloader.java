@@ -51,7 +51,7 @@ public class Downloader {
   }
 
   public DownloadResult downloadChunks() {
-    final var map = new ConcurrentHashMap<Chunk, Throwable>();
+    final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
     final var downloadResult = new DownloadResult();
     final var filename = fileService.filename(downloaderHttpClient.getUrl());
     final var futureChunks = new ArrayList<CompletableFuture<Void>>(chunks.size());
@@ -60,7 +60,7 @@ public class Downloader {
           () -> fileService.saveToFile(downloaderHttpClient.inputStreamOf(chunk),
               fileService.outputStreamFor(chunk, filename), this::handleChunkDownloadedBytesCount),
           executor).exceptionally(error -> {
-            map.put(chunk, error);
+            chunkErrors.put(chunk, error);
             return null;
           });
       futureChunks.add(future);
@@ -69,7 +69,7 @@ public class Downloader {
     executor.shutdown();
     done = true;
     downloadResult.setTotalDownloaded(totalDownloadedBytes.get());
-    downloadResult.setChunksErrors(map);
+    downloadResult.setChunkErrors(chunkErrors);
     return downloadResult;
   }
 

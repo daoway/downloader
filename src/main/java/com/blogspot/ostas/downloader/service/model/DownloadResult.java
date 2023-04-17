@@ -7,13 +7,13 @@ import lombok.Data;
 @Data
 public class DownloadResult {
   private long totalDownloaded;
-  private Map<Chunk, Throwable> chunksErrors;
+  private Map<Chunk, Throwable> chunkErrors;
 
   public DownloadResult() {
-    this.chunksErrors = new ConcurrentHashMap<>();
+    this.chunkErrors = new ConcurrentHashMap<>();
   }
 
   public boolean hasErrors() {
-    return !chunksErrors.entrySet().isEmpty();
+    return !chunkErrors.entrySet().isEmpty();
   }
 }

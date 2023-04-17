@@ -84,7 +84,7 @@ class NginxIntegrationTest {
   void downloadFileWithConnectionLimit() {
     var fileName = "file.out";
     var url = "http://localhost:%s/downloads/%s".formatted(nginx.getFirstMappedPort(), fileName);
-    var actualResult = downloader.download(url);
-    assertThat(actualResult.getChunksErrors()).hasSize(6);
+    var downloadResult = downloader.download(url);
+    assertThat(downloadResult.getChunkErrors()).hasSize(6);
   }
 }
