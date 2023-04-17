@@ -4,11 +4,11 @@ import lombok.Getter;
 
 @Getter
 public class NotExpectedStatusCodeException extends RuntimeException {
-    private final int statusCode;
+  private final int statusCode;
 
-    public NotExpectedStatusCodeException(String message, int statusCode) {
-        super(message);
-        this.statusCode = statusCode;
-    }
+  public NotExpectedStatusCodeException(String message, int statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
 
 }

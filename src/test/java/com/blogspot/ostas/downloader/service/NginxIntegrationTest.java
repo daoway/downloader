@@ -1,6 +1,19 @@
 package com.blogspot.ostas.downloader.service;
 
+import static com.blogspot.ostas.downloader.util.TestUtils.concurrentDownload;
+import static com.blogspot.ostas.downloader.util.TestUtils.downloadFile;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,53 +23,68 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.net.http.HttpClient;
-
-import static com.blogspot.ostas.downloader.util.TestUtils.concurrentDownload;
-import static com.blogspot.ostas.downloader.util.TestUtils.downloadFile;
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Testcontainers
 @SpringBootTest(properties = {"command.line.runner.enabled=false"})
 class NginxIntegrationTest {
 
-    @Container
-    private static final GenericContainer<?> nginx = new GenericContainer<>(
-            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:latest")
-                    .run("apk add --update nginx")
-                    .cmd("nginx", "-g", "daemon off;")
-                    .build()))
-            .withClasspathResourceMapping("nginx.conf", "/etc/nginx/nginx.conf", BindMode.READ_ONLY)
-            .withFileSystemBind("./src/test/resources/public", "/var/www/html", BindMode.READ_ONLY)
-            .withExposedPorts(9999);
+  @Container
+  private static final GenericContainer<?> nginx = new GenericContainer<>(
+      new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:latest")
+          .run("apk add --update nginx")
+          .cmd("nginx", "-g", "daemon off;")
+          .build()))
+      .withClasspathResourceMapping("nginx.conf", "/etc/nginx/nginx.conf", BindMode.READ_ONLY)
+      .withFileSystemBind("./src/test/resources/public", "/var/www/html", BindMode.READ_ONLY)
+      .withExposedPorts(9999);
 
-    @Autowired
-    private HttpClient httpClient;
+  @Autowired
+  private HttpClient httpClient;
 
-    @Autowired
-    private FileService fileService;
+  @Autowired
+  private FileService fileService;
 
-    @Autowired
-    private DownloaderHttpClient downloaderHttpClient;
+  @Autowired
+  private DownloaderHttpClient downloaderHttpClient;
 
-    @Autowired
-    private Downloader downloader;
+  @Autowired
+  private Downloader downloader;
 
-    @Test
-    void serverConnectionLimit() {
-        final String url = "http://localhost:%s/downloads/file.out".formatted(nginx.getFirstMappedPort());
-        final int numberOfThreads = 3;
-        downloaderHttpClient.setUrl(url);
-        var errors = concurrentDownload(url, numberOfThreads,
-                (u, index) -> downloadFile(url, fileService.filename(url) + "_" + index, httpClient));
-        assertThat(errors).hasSize(1);
-    }
+  @AfterAll
+  static void cleanup() {
+    nginx.stop();
+  }
 
-    @Test
-    void downloadFileWithConnectionLimit() {
-        var fileName = "file.out";
-        var url = "http://localhost:%s/downloads/%s".formatted(nginx.getFirstMappedPort(), fileName);
-        var actualResult = downloader.download(url);
-        assertThat(actualResult.getChunksErrors()).hasSize(6);
-    }
+  @Test
+  void serverConnectionLimit() {
+    final String url =
+        "http://localhost:%s/downloads/file.out".formatted(nginx.getFirstMappedPort());
+    final int numberOfThreads = 3;
+    downloaderHttpClient.setUrl(url);
+    List<String> downloadedFileNames = Collections.synchronizedList(new ArrayList<>());
+
+    var errors = concurrentDownload(url, numberOfThreads, (u, index) -> {
+      var file = fileService.filename(url) + "_" + index;
+      downloadFile(url, file, httpClient);
+      synchronized (downloadedFileNames) {
+        downloadedFileNames.add(file);
+      }
+    });
+    assertThat(errors).hasSize(1);
+    assertThat(downloadedFileNames).hasSize(2);
+    downloadedFileNames.forEach(file -> {
+      try {
+        Files.delete(Path.of(file));
+      } catch (IOException exception) {
+        fail("No file for removal");
+      }
+    });
+  }
+
+  @Test
+  void downloadFileWithConnectionLimit() {
+    var fileName = "file.out";
+    var url = "http://localhost:%s/downloads/%s".formatted(nginx.getFirstMappedPort(), fileName);
+    var actualResult = downloader.download(url);
+    assertThat(actualResult.getChunksErrors()).hasSize(6);
+  }
 }

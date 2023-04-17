@@ -11,12 +11,12 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "command.line.runner", value = "enabled", havingValue = "true", matchIfMissing = true)
 public class DownloadAppExecutor implements CommandLineRunner {
 
-    private final Downloader downloader;
+  private final Downloader downloader;
 
-    @Override
-    public void run(String... args) {
-        var url = "https://dlcdn.apache.org/spark/spark-3.3.2/spark-3.3.2-bin-hadoop3.tgz";
-        downloader.download(url);
-    }
+  @Override
+  public void run(String... args) {
+    var url = "https://dlcdn.apache.org/spark/spark-3.3.2/spark-3.3.2-bin-hadoop3.tgz";
+    downloader.download(url);
+  }
 
 }
