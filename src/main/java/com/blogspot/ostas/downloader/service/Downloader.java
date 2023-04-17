@@ -60,9 +60,9 @@ public class Downloader {
           () -> fileService.saveToFile(downloaderHttpClient.inputStreamOf(chunk),
               fileService.outputStreamFor(chunk, filename), this::handleChunkDownloadedBytesCount),
           executor).exceptionally(error -> {
-            chunkErrors.put(chunk, error);
-            return null;
-          });
+        chunkErrors.put(chunk, error);
+        return null;
+      });
       futureChunks.add(future);
     });
     CompletableFuture.allOf(futureChunks.toArray(CompletableFuture[]::new)).join();
