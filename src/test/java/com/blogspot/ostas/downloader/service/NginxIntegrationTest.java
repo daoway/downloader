@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
+import com.blogspot.ostas.downloader.util.DownloadException;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @SpringBootTest(properties = {"command.line.runner.enabled=false"})
+@Slf4j
 class NginxIntegrationTest {
 
   @Container
@@ -70,6 +73,7 @@ class NginxIntegrationTest {
       }
     });
     assertThat(errors).hasSize(1);
+    assertThat(errors.get(0)).isInstanceOf(DownloadException.class).hasMessage("Non OK code : 503");
     assertThat(downloadedFileNames).hasSize(2);
     downloadedFileNames.forEach(file -> {
       try {
@@ -85,6 +89,18 @@ class NginxIntegrationTest {
     var fileName = "file.out";
     var url = "http://localhost:%s/downloads/%s".formatted(nginx.getFirstMappedPort(), fileName);
     var downloadResult = downloader.download(url);
-    assertThat(downloadResult.getChunkErrors()).hasSize(6);
+    var configuredServerConcurrentConnections = 2;
+    assertThat(downloadResult.getChunkErrors()).hasSize(
+        downloader.getChunks().size() - configuredServerConcurrentConnections);
+    //cleanup
+    downloadResult.getChunkErrors().forEach(((chunk, throwable) -> {
+      var file = fileService.filename(url) + "." + chunk.getIndex();
+      try {
+        Files.deleteIfExists(Path.of(file));
+      } catch (IOException exception) {
+        log.error("Error :", exception);
+        fail("Error removing partial downloads");
+      }
+    }));
   }
 }

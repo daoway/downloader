@@ -55,7 +55,7 @@ public class TestUtils {
       return;
     }
     if (response.statusCode() != HttpStatus.OK.value()) {
-      throw new RuntimeException("Non OK code : " + response.statusCode());
+      throw new DownloadException("Non OK code : " + response.statusCode());
     }
     try (InputStream inputStream = response.body();
          var outputStream = Files.newOutputStream(Paths.get(filename))) {
