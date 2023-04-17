@@ -1,8 +1,13 @@
 package com.blogspot.ostas.downloader.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +34,11 @@ class IntegrationTest {
     var url = "http://localhost:%s/downloads/%s".formatted(port, fileName);
     var downloadResult = downloader.download(url);
     assertThat(downloadResult.getTotalDownloaded()).isEqualTo(expectedBytes);
+    try {
+      Files.delete(Path.of(fileName));
+    } catch (IOException e) {
+      fail(e.getMessage());
+    }
   }
 
 }
