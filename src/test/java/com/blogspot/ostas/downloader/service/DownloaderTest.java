@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Test;
@@ -46,15 +48,15 @@ class DownloaderTest {
     Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
     Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
     int expectedContentLength = 0;
+    var fileName = fileService.filename(downloaderHttpClient.getUrl());
     for (var chunk : chunks) {
       byte[] chunkBytes = "contents of chunk number %s%n".formatted(chunk.getIndex())
           .getBytes(StandardCharsets.UTF_8);
       expectedContentLength += chunkBytes.length;
       chunkInputStreams.put(chunk, new ByteArrayInputStream(chunkBytes));
       chunkOutputStreams.put(chunk, new ByteArrayOutputStream());
-      var fileNamePart = fileService.filename(downloaderHttpClient.getUrl());
       when(downloaderHttpClient.inputStreamOf(chunk)).thenReturn(chunkInputStreams.get(chunk));
-      when(fileService.outputStreamFor(chunk, fileNamePart)).thenReturn(
+      when(fileService.outputStreamFor(chunk, fileName)).thenReturn(
           chunkOutputStreams.get(chunk));
     }
 
@@ -67,6 +69,7 @@ class DownloaderTest {
       try {
         chunkInputStreams.get(chunk).close();
         chunkOutputStreams.get(chunk).close();
+        Files.delete(Path.of("%s.%d".formatted(fileName, chunk.getIndex())));
       } catch (IOException exception) {
         throw new RuntimeException(exception);
       }
