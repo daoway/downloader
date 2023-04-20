@@ -93,14 +93,13 @@ class NginxIntegrationTest {
     assertThat(downloadResult.getChunkErrors()).hasSize(
         downloader.getChunks().size() - maxConcurrentDownloads);
     //cleanup
-    downloadResult.getChunkErrors().forEach(((chunk, throwable) -> {
+    downloader.getChunks().forEach(chunk -> {
       var file = fileService.filename(url) + "." + chunk.getIndex();
       try {
         Files.deleteIfExists(Path.of(file));
       } catch (IOException exception) {
-        log.error("Error :", exception);
         fail("Error removing partial downloads");
       }
-    }));
+    });
   }
 }
