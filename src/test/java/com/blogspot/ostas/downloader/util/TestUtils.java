@@ -5,6 +5,7 @@ import static com.blogspot.ostas.downloader.util.Utils.bytesToHumanReadable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -26,7 +27,8 @@ public class TestUtils {
 
   public static void main(String[] args) {
     int linesCount = 100_000;
-    generateBigFile(linesCount, "src/test/resources/public/downloads/file.out");
+    //generateBigFile(linesCount, "src/test/resources/public/downloads/file.out");
+    createFileOfSize("test.raw",10737418240L); //10 Gb
   }
 
   private static void generateBigFile(int linesCount, String fileName) {
@@ -108,4 +110,12 @@ public class TestUtils {
     return errors;
   }
 
+  public static void createFileOfSize(String fileName, long fileSize) {
+    File file = new File(fileName);
+    try (var raf = new RandomAccessFile(file, "rw")) {
+      raf.setLength(fileSize);
+    } catch (IOException exception) {
+      throw new RuntimeException(exception);
+    }
+  }
 }
