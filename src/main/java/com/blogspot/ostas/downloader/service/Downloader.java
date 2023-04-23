@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,7 +51,7 @@ public class Downloader {
     } while (!totalDownloadedBytes.compareAndSet(current, next));
   }
 
-  public DownloadResult downloadChunks() {
+  public DownloadResult downloadChunks(List<Chunk> chunks) {
     final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
     final var downloadResult = new DownloadResult();
     final var filename = fileService.filename(downloaderHttpClient.getUrl());
@@ -88,19 +89,36 @@ public class Downloader {
 
   public DownloadResult download(String url) {
     downloaderHttpClient.setUrl(url);
-    var cores = Runtime.getRuntime().availableProcessors();
-    setNumberOfThreads(cores);
-    var size = getContentLength();
-    log.info("Downloading total bytes {} (~{})", size, bytesToHumanReadable(size));
-    calculateChunks();
-    var downloadResult = downloadChunks();
-    if (downloadResult.hasErrors()) {
+    CompletableFuture<Integer> threadsNumberFuture =
+        CompletableFuture.supplyAsync(() -> {
+          setNumberOfThreads(Runtime.getRuntime().availableProcessors());
+          return numberOfThreads;
+        });
+    CompletableFuture<Long> contentLengthFuture =
+        CompletableFuture.supplyAsync(this::getContentLength);
+    CompletableFuture<DownloadResult> downloadSteps =
+        threadsNumberFuture.thenCombineAsync(contentLengthFuture,
+            (threadsNumber, downloadSize) -> {
+              log.info("Downloading total bytes {} (~{})", downloadSize,
+                  bytesToHumanReadable(downloadSize));
+              calculateChunks();
+              return this.chunks;
+            }).thenApplyAsync(this::downloadChunks);
+    try {
+      var downloadResult = downloadSteps.get();
+      if (downloadResult.hasErrors()) {
+        return downloadResult;
+      } else {
+        var filename = fileService.filename(downloaderHttpClient.getUrl());
+        fileService.mergeChunks(chunks, filename);
+      }
       return downloadResult;
-    } else {
-      var filename = fileService.filename(downloaderHttpClient.getUrl());
-      fileService.mergeChunks(chunks, filename);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (ExecutionException exception) {
+      log.error("Execution error", exception);
     }
-    return downloadResult;
+    return null;
   }
 
   public List<Chunk> getChunks() {

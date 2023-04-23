@@ -1,6 +1,7 @@
 package com.blogspot.ostas.downloader.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
@@ -60,9 +61,9 @@ class DownloaderTest {
           chunkOutputStreams.get(chunk));
     }
 
-    var downloadedBytes = downloader.downloadChunks();
+    var downloadResult = downloader.downloadChunks(chunks);
     // then
-    assertThat(downloadedBytes.getTotalDownloaded()).isEqualTo(expectedContentLength);
+    assertThat(downloadResult.getTotalDownloaded()).isEqualTo(expectedContentLength);
     assertThat(downloader.isDone()).isTrue();
 
     for (var chunk : chunks) {
