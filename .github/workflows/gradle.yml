@@ -19,6 +19,12 @@ permissions:
 jobs:
   build:
 
+  permissions:
+    id-token: write
+    contents: read
+    issues: write
+    pull-requests: write
+
     runs-on: ubuntu-latest
 
     steps:
@@ -32,3 +38,10 @@ jobs:
       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
       with:
         arguments: build
+        # Runs a single command using the runners shell
+    - name: Run shell script
+      run: chmod +x ./config/pmd/pmd.xml
+    - name: Push PMD report
+      uses: jwgmeligmeyling/pmd-github-action@v1.2
+      with:
+        path: '**/pmd.xml'
