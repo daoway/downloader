@@ -7,6 +7,7 @@ plugins {
     id "com.github.spotbugs" version "5.0.14"
     id "org.sonarqube" version "4.0.0.2929"
     id 'checkstyle'
+    id "io.snyk.gradle.plugin.snykplugin" version "0.4"
 }
 
 group = 'com.blogspot.ostas.downloader'
@@ -88,4 +89,12 @@ checkstyleMain {
 }
 checkstyleTest {
     source = 'src/test/java'
+}
+
+snyk {
+    arguments = '--all-sub-projects'
+    severity = 'low'
+    api = System.getenv('SNYK_TOKEN')
+    autoDownload = true
+    autoUpdate = true
 }
