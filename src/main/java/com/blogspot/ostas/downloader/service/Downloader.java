@@ -83,8 +83,13 @@ public class Downloader {
     return contentLength;
   }
 
-  public void calculateChunks() {
-    this.chunks = rangeService.rangeIntervals(contentLength, numberOfThreads);
+  public List<Chunk> calculateChunks() {
+    return calculateChunks(contentLength, numberOfThreads);
+  }
+
+  public List<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
+    this.chunks = rangeService.rangeIntervals(contentLength, numberOfChunks);
+    return this.chunks;
   }
 
   public DownloadResult download(String url) {
@@ -101,8 +106,7 @@ public class Downloader {
             (threadsNumber, downloadSize) -> {
               log.info("Downloading total bytes {} (~{})", downloadSize,
                   bytesToHumanReadable(downloadSize));
-              calculateChunks();
-              return this.chunks;
+              return calculateChunks(downloadSize, threadsNumber);
             }).thenApplyAsync(this::downloadChunks);
     try {
       var downloadResult = downloadSteps.get();
