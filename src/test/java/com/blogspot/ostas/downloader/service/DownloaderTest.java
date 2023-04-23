@@ -1,7 +1,6 @@
 package com.blogspot.ostas.downloader.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
@@ -44,8 +43,7 @@ class DownloaderTest {
     // when
     when(downloaderHttpClient.getUrl()).thenReturn(url);
     when(downloaderHttpClient.contentLength()).thenReturn(contentLength);
-    downloader.calculateChunks();
-    var chunks = downloader.getChunks();
+    var chunks = downloader.calculateChunks();
     Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
     Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
     int expectedContentLength = 0;
