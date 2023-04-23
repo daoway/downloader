@@ -34,3 +34,5 @@ jobs:
         arguments: build
     - name: Push PMD report
       uses: jwgmeligmeyling/pmd-github-action@v1.2
+      with:
+        path: '**/pmd.xml'
