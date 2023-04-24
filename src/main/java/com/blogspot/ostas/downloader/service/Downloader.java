@@ -31,16 +31,14 @@ public class Downloader {
   private final FileService fileService;
 
   private final AtomicLong totalDownloadedBytes = new AtomicLong(0);
-  private int numberOfThreads;
   private ExecutorService executor;
   private volatile boolean done;
   private long contentLength = -1;
   private List<Chunk> chunks;
 
   public int setNumberOfThreads(int numberOfThreads) {
-    this.numberOfThreads = numberOfThreads;
     this.executor = Executors.newFixedThreadPool(numberOfThreads, new AppThreadFactory());
-    return this.numberOfThreads;
+    return numberOfThreads;
   }
 
   public void handleChunkDownloadedBytesCount(int byteRead) {
@@ -80,7 +78,9 @@ public class Downloader {
   }
 
   public long getContentLength() {
-    this.contentLength = downloaderHttpClient.contentLength();
+    if (this.contentLength == -1) {
+      contentLength = downloaderHttpClient.contentLength();
+    }
     return this.contentLength;
   }
 
@@ -92,7 +92,8 @@ public class Downloader {
   public DownloadResult download(String url) {
     downloaderHttpClient.setUrl(url);
     CompletableFuture<Integer> threadsNumberFuture =
-        CompletableFuture.supplyAsync(() -> setNumberOfThreads(Runtime.getRuntime().availableProcessors()));
+        CompletableFuture.supplyAsync(
+            () -> setNumberOfThreads(Runtime.getRuntime().availableProcessors()));
     CompletableFuture<Long> contentLengthFuture =
         CompletableFuture.supplyAsync(this::getContentLength);
     CompletableFuture<DownloadResult> downloadSteps =

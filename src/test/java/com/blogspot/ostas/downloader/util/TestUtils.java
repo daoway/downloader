@@ -29,7 +29,7 @@ public class TestUtils {
   public static void main(String[] args) {
     int linesCount = 100_000;
     //generateBigFile(linesCount, "src/test/resources/public/downloads/file.out");
-    createFileOfSize("test.raw",10737418240L); //10 Gb
+    createFileOfSize("test.raw", 10737418240L); //10 Gb
   }
 
   private static void generateBigFile(int linesCount, String fileName) {

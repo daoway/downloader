@@ -15,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -43,7 +45,7 @@ class DownloaderTest {
     // when
     when(downloaderHttpClient.getUrl()).thenReturn(url);
     when(downloaderHttpClient.contentLength()).thenReturn(contentLength);
-    var chunks = downloader.calculateChunks(contentLength,threadsCount);
+    var chunks = downloader.calculateChunks(contentLength, threadsCount);
     Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
     Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
     int expectedContentLength = 0;
@@ -89,10 +91,16 @@ class DownloaderTest {
     when(downloaderHttpClient.contentLength()).thenReturn(10L);
     when(downloader.getContentLength()).thenReturn(10L);
     // when
-    downloader.calculateChunks(downloaderHttpClient.contentLength(),threadsCount);
+    downloader.calculateChunks(downloaderHttpClient.contentLength(), threadsCount);
     var chunks = downloader.getChunks();
     // then
     assertThat(chunks).containsExactly(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
+  }
+
+  @BeforeEach
+  public void resetMocks() {
+      Mockito.reset(downloader); // reset the spy object
+      downloader = Mockito.spy(downloader); // re-spy the bean
   }
 
 }
