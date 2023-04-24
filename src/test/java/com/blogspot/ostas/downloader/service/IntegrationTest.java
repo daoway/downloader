@@ -10,19 +10,21 @@ import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(properties = {
-    "command.line.runner.enabled=false"}, webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@TestPropertySource(properties = {"command.line.runner.enabled=false",
+    "spring.main.web-application-type=servlet"})
 @RequiredArgsConstructor
 class IntegrationTest {
 
   @Autowired
   private Downloader downloader;
 
-  @Value(value = "${local.server.port}")
+  @LocalServerPort
   private int port;
 
   @Test

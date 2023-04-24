@@ -99,8 +99,8 @@ class DownloaderTest {
 
   @BeforeEach
   public void resetMocks() {
-      Mockito.reset(downloader); // reset the spy object
-      downloader = Mockito.spy(downloader); // re-spy the bean
+    Mockito.reset(downloader); // reset the spy object
+    downloader = Mockito.spy(downloader); // re-spy the bean
   }
 
 }
