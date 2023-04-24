@@ -9,8 +9,11 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(properties = {"command.line.runner.enabled=false"})
+@SpringBootTest
+@TestPropertySource(properties = {"command.line.runner.enabled=false",
+    "spring.jpa.hibernate.ddl-auto=create-drop"})
 class DownloadTaskRepositoryTest {
   @Autowired
   private DownloadTaskRepository downloadTaskRepository;
