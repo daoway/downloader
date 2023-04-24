@@ -52,11 +52,12 @@ public class FileService {
     try (var targetChannel = FileChannel.open(filePath, StandardOpenOption.CREATE,
         StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
       for (var chunk : chunks) {
-        var inputFile = outputFileName + "." + chunk.getIndex();
-        try (var inputChannel = FileChannel.open(Paths.get(inputFile), StandardOpenOption.READ)) {
+        var inputFileName = outputFileName + "." + chunk.getIndex();
+        var inputFile = Paths.get(inputFileName);
+        try (var inputChannel = FileChannel.open(inputFile, StandardOpenOption.READ)) {
           inputChannel.transferTo(0, inputChannel.size(), targetChannel);
         }
-        Files.delete(Paths.get(inputFile));
+        Files.delete(inputFile);
       }
     } catch (IOException e) {
       throw new MergeChunksException(e);
