@@ -94,7 +94,7 @@ checkstyleTest {
 snyk {
     arguments = '--all-sub-projects'
     severity = 'low'
-    api = System.getenv('SNYK_TOKEN')
+    api = System.getenv('SNYK_TOKEN') //https://app.snyk.io/registry/account?fromGitHubAuth=true
     autoDownload = true
     autoUpdate = true
 }
