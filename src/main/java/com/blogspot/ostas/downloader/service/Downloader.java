@@ -37,9 +37,10 @@ public class Downloader {
   private long contentLength = -1;
   private List<Chunk> chunks;
 
-  public void setNumberOfThreads(int numberOfThreads) {
+  public int setNumberOfThreads(int numberOfThreads) {
     this.numberOfThreads = numberOfThreads;
     this.executor = Executors.newFixedThreadPool(numberOfThreads, new AppThreadFactory());
+    return this.numberOfThreads;
   }
 
   public void handleChunkDownloadedBytesCount(int byteRead) {
@@ -80,11 +81,7 @@ public class Downloader {
 
   public long getContentLength() {
     this.contentLength = downloaderHttpClient.contentLength();
-    return contentLength;
-  }
-
-  public List<Chunk> calculateChunks() {
-    return calculateChunks(contentLength, numberOfThreads);
+    return this.contentLength;
   }
 
   public List<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
@@ -95,10 +92,7 @@ public class Downloader {
   public DownloadResult download(String url) {
     downloaderHttpClient.setUrl(url);
     CompletableFuture<Integer> threadsNumberFuture =
-        CompletableFuture.supplyAsync(() -> {
-          setNumberOfThreads(Runtime.getRuntime().availableProcessors());
-          return numberOfThreads;
-        });
+        CompletableFuture.supplyAsync(() -> setNumberOfThreads(Runtime.getRuntime().availableProcessors()));
     CompletableFuture<Long> contentLengthFuture =
         CompletableFuture.supplyAsync(this::getContentLength);
     CompletableFuture<DownloadResult> downloadSteps =

@@ -38,12 +38,12 @@ class DownloaderTest {
     // given
     var url = "http://dummy-url-used-for-testing.com/test.out";
     long contentLength = 224;
-    downloader.setNumberOfThreads(Runtime.getRuntime().availableProcessors());
+    var threadsCount = downloader.setNumberOfThreads(Runtime.getRuntime().availableProcessors());
 
     // when
     when(downloaderHttpClient.getUrl()).thenReturn(url);
     when(downloaderHttpClient.contentLength()).thenReturn(contentLength);
-    var chunks = downloader.calculateChunks();
+    var chunks = downloader.calculateChunks(contentLength,threadsCount);
     Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
     Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
     int expectedContentLength = 0;
@@ -85,11 +85,11 @@ class DownloaderTest {
   @Test
   void calculateDownloadRanges() {
     // given
-    downloader.setNumberOfThreads(3);
+    var threadsCount = downloader.setNumberOfThreads(3);
     when(downloaderHttpClient.contentLength()).thenReturn(10L);
     when(downloader.getContentLength()).thenReturn(10L);
     // when
-    downloader.calculateChunks();
+    downloader.calculateChunks(downloaderHttpClient.contentLength(),threadsCount);
     var chunks = downloader.getChunks();
     // then
     assertThat(chunks).containsExactly(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
