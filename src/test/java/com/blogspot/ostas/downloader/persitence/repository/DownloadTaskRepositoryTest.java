@@ -13,7 +13,8 @@ import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @TestPropertySource(properties = {"command.line.runner.enabled=false",
-    "spring.jpa.hibernate.ddl-auto=create-drop"})
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.datasource.url=jdbc:h2:file:./data/download_test_db"})
 class DownloadTaskRepositoryTest {
   @Autowired
   private DownloadTaskRepository downloadTaskRepository;

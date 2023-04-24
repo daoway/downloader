@@ -2,7 +2,7 @@ spring:
   main:
     web-application-type: none
   datasource:
-    url: jdbc:h2:file:./data/sample
+    url: jdbc:h2:file:./data/download_db
     driver-class-name: org.h2.Driver
     username: sa
     password:
