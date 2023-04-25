@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,18 +52,28 @@ public class Downloader {
   }
 
   public DownloadResult downloadChunks(List<Chunk> chunks) {
+    int maxThreads = 2;
+    final var semaphore = new Semaphore(maxThreads);
     final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
     final var downloadResult = new DownloadResult();
     final var filename = fileService.filename(downloaderHttpClient.getUrl());
     final var futureChunks = new ArrayList<CompletableFuture<Void>>(chunks.size());
     chunks.forEach(chunk -> {
       var future = CompletableFuture.runAsync(
-          () -> fileService.saveToFile(downloaderHttpClient.inputStreamOf(chunk),
-              fileService.outputStreamFor(chunk, filename), this::handleChunkDownloadedBytesCount),
+          () -> {
+            try {
+              semaphore.acquire();
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            fileService.saveToFile(downloaderHttpClient.inputStreamOf(chunk),
+                fileService.outputStreamFor(chunk, filename),
+                this::handleChunkDownloadedBytesCount);
+          },
           executor).exceptionally(error -> {
         chunkErrors.put(chunk, error);
         return null;
-      });
+      }).whenComplete((result, error) -> semaphore.release());
       futureChunks.add(future);
     });
     CompletableFuture.allOf(futureChunks.toArray(CompletableFuture[]::new)).join();
