@@ -3,7 +3,7 @@ package com.blogspot.ostas.downloader.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.blogspot.ostas.downloader.service.model.Chunk;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -23,7 +23,7 @@ class RangeServiceTest {
 
     assertThat(chunks).hasSize(numberOfChunks);
 
-    var expected = List.of(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
+    var expected = Set.of(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
     assertThat(chunks).isEqualTo(expected);
   }
 

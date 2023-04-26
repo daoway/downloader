@@ -8,7 +8,7 @@ import com.blogspot.ostas.downloader.service.model.Chunk;
 import com.blogspot.ostas.downloader.service.model.DownloadResult;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -34,7 +34,7 @@ public class Downloader {
   private final AtomicLong totalDownloadedBytes = new AtomicLong(0);
   private ExecutorService executor;
   private long contentLength = -1;
-  private List<Chunk> chunks;
+  private Set<Chunk> chunks;
 
   private int maxThreads;
 
@@ -53,7 +53,7 @@ public class Downloader {
     } while (!totalDownloadedBytes.compareAndSet(current, next));
   }
 
-  public DownloadResult downloadChunks(List<Chunk> chunks) {
+  public DownloadResult downloadChunks(Set<Chunk> chunks) {
     final var semaphore = new Semaphore(maxThreads);
     final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
     final var filename = fileService.filename(downloaderHttpClient.getUrl());
@@ -81,8 +81,7 @@ public class Downloader {
     var numberOfSuccessfulConcurrentDownloads = chunks.size() - chunkErrors.size();
     if (numberOfSuccessfulConcurrentDownloads != chunks.size()) {
       this.maxThreads = numberOfSuccessfulConcurrentDownloads;
-      var notDownloadedChunks = chunkErrors.keySet();
-      return downloadChunks(new ArrayList<>(notDownloadedChunks));
+      return downloadChunks(chunkErrors.keySet());
     } else {
       final var downloadResult = new DownloadResult();
       downloadResult.setTotalDownloaded(totalDownloadedBytes.get());
@@ -99,7 +98,7 @@ public class Downloader {
     return this.contentLength;
   }
 
-  public List<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
+  public Set<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
     this.chunks = rangeService.rangeIntervals(contentLength, numberOfChunks);
     return this.chunks;
   }
@@ -135,8 +134,8 @@ public class Downloader {
     return null;
   }
 
-  public List<Chunk> getChunks() {
-    return Collections.unmodifiableList(chunks);
+  public Set<Chunk> getChunks() {
+    return Collections.unmodifiableSet(chunks);
   }
 
 }

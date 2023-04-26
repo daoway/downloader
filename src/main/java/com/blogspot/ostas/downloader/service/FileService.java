@@ -15,7 +15,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
+import java.util.Set;
 import java.util.function.IntConsumer;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +47,7 @@ public class FileService {
     }
   }
 
-  public void mergeChunks(List<Chunk> chunks, String outputFileName) {
+  public void mergeChunks(Set<Chunk> chunks, String outputFileName) {
     var filePath = Paths.get(outputFileName);
     try (var targetChannel = FileChannel.open(filePath, StandardOpenOption.CREATE,
         StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
