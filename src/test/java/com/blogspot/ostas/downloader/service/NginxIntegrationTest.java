@@ -89,7 +89,7 @@ class NginxIntegrationTest {
     var fileName = "file.out";
     var url = "http://localhost:%s/downloads/%s".formatted(nginx.getFirstMappedPort(), fileName);
     var downloadResult = downloader.download(url);
-    var maxConcurrentDownloads = 2;
+    var maxConcurrentDownloads = 2;// configured on server side
     assertThat(downloadResult.getChunkErrors()).hasSize(
         downloader.getChunks().size() - maxConcurrentDownloads);
     //cleanup
