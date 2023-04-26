@@ -37,8 +37,18 @@ public class Downloader {
   private long contentLength = -1;
   private List<Chunk> chunks;
 
+  public int getMaxThreads() {
+    return maxThreads;
+  }
+
+  public void setMaxThreads(int maxThreads) {
+    this.maxThreads = maxThreads;
+  }
+
+  private int maxThreads;
   public int setNumberOfThreads(int numberOfThreads) {
     this.executor = Executors.newFixedThreadPool(numberOfThreads, new AppThreadFactory());
+    this.maxThreads = numberOfThreads;
     return numberOfThreads;
   }
 
@@ -52,7 +62,6 @@ public class Downloader {
   }
 
   public DownloadResult downloadChunks(List<Chunk> chunks) {
-    int maxThreads = 2;
     final var semaphore = new Semaphore(maxThreads);
     final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
     final var downloadResult = new DownloadResult();
