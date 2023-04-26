@@ -33,19 +33,11 @@ public class Downloader {
 
   private final AtomicLong totalDownloadedBytes = new AtomicLong(0);
   private ExecutorService executor;
-  private volatile boolean done;
   private long contentLength = -1;
   private List<Chunk> chunks;
 
-  public int getMaxThreads() {
-    return maxThreads;
-  }
-
-  public void setMaxThreads(int maxThreads) {
-    this.maxThreads = maxThreads;
-  }
-
   private int maxThreads;
+
   public int setNumberOfThreads(int numberOfThreads) {
     this.executor = Executors.newFixedThreadPool(numberOfThreads, new AppThreadFactory());
     this.maxThreads = numberOfThreads;
@@ -64,7 +56,6 @@ public class Downloader {
   public DownloadResult downloadChunks(List<Chunk> chunks) {
     final var semaphore = new Semaphore(maxThreads);
     final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
-    final var downloadResult = new DownloadResult();
     final var filename = fileService.filename(downloaderHttpClient.getUrl());
     final var futureChunks = new ArrayList<CompletableFuture<Void>>(chunks.size());
     chunks.forEach(chunk -> {
@@ -86,15 +77,19 @@ public class Downloader {
       futureChunks.add(future);
     });
     CompletableFuture.allOf(futureChunks.toArray(CompletableFuture[]::new)).join();
-    executor.shutdown();
-    done = true;
-    downloadResult.setTotalDownloaded(totalDownloadedBytes.get());
-    downloadResult.setChunkErrors(chunkErrors);
-    return downloadResult;
-  }
 
-  public boolean isDone() {
-    return done;
+    var numberOfSuccessfulConcurrentDownloads = chunks.size() - chunkErrors.size();
+    if (numberOfSuccessfulConcurrentDownloads != chunks.size()) {
+      this.maxThreads = numberOfSuccessfulConcurrentDownloads;
+      var notDownloadedChunks = chunkErrors.keySet();
+      return downloadChunks(new ArrayList<>(notDownloadedChunks));
+    } else {
+      final var downloadResult = new DownloadResult();
+      downloadResult.setTotalDownloaded(totalDownloadedBytes.get());
+      downloadResult.setChunkErrors(chunkErrors);
+      executor.shutdown();
+      return downloadResult;
+    }
   }
 
   public long getContentLength() {

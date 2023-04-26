@@ -64,7 +64,6 @@ class DownloaderTest {
     var downloadResult = downloader.downloadChunks(chunks);
     // then
     assertThat(downloadResult.getTotalDownloaded()).isEqualTo(expectedContentLength);
-    assertThat(downloader.isDone()).isTrue();
 
     for (var chunk : chunks) {
       try {
