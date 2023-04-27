@@ -79,13 +79,16 @@ public class Downloader {
     CompletableFuture.allOf(futureChunks.toArray(CompletableFuture[]::new)).join();
 
     var numberOfSuccessfulConcurrentDownloads = chunks.size() - chunkErrors.size();
+    log.info("Downloaded complete chunks {}",numberOfSuccessfulConcurrentDownloads);
     if (numberOfSuccessfulConcurrentDownloads != chunks.size()) {
       this.maxThreads = numberOfSuccessfulConcurrentDownloads;
+      log.info("Semaphore set to {}",numberOfSuccessfulConcurrentDownloads);
       return downloadChunks(chunkErrors.keySet());
     } else {
       final var downloadResult = new DownloadResult();
       downloadResult.setTotalDownloaded(totalDownloadedBytes.get());
       downloadResult.setChunkErrors(chunkErrors);
+      semaphore.drainPermits();
       executor.shutdown();
       return downloadResult;
     }

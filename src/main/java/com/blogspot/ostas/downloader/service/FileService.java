@@ -72,4 +72,8 @@ public class FileService {
     }
   }
 
+  public String chunkFileName(String url, Chunk chunk){
+    return "%s.%s".formatted(filename(url),chunk.getIndex());
+  }
+
 }
