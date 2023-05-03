@@ -15,8 +15,10 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Set;
 import java.util.function.IntConsumer;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -48,11 +50,15 @@ public class FileService {
   }
 
   public void mergeChunks(Set<Chunk> chunks, String outputFileName) {
+    var files = chunks.stream().map(chunk -> outputFileName + "." + chunk.getIndex()).collect(Collectors.toList());
+    mergeFiles(files,outputFileName);
+  }
+
+  public void mergeFiles(List<String> files, String outputFileName) {
     var filePath = Paths.get(outputFileName);
     try (var targetChannel = FileChannel.open(filePath, StandardOpenOption.CREATE,
         StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-      for (var chunk : chunks) {
-        var inputFileName = outputFileName + "." + chunk.getIndex();
+      for (var inputFileName : files) {
         var inputFile = Paths.get(inputFileName);
         try (var inputChannel = FileChannel.open(inputFile, StandardOpenOption.READ)) {
           inputChannel.transferTo(0, inputChannel.size(), targetChannel);
