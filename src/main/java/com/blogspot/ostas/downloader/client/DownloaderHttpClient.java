@@ -1,7 +1,10 @@
 package com.blogspot.ostas.downloader.client;
 
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+
 import com.blogspot.ostas.downloader.client.exception.NoContentLengthException;
 import com.blogspot.ostas.downloader.client.exception.NoRangeStreamException;
+import com.blogspot.ostas.downloader.client.exception.FileNotFoundException;
 import com.blogspot.ostas.downloader.client.exception.NotExpectedStatusCodeException;
 import com.blogspot.ostas.downloader.service.FileService;
 import com.blogspot.ostas.downloader.service.model.Chunk;
@@ -34,6 +37,7 @@ public class DownloaderHttpClient {
     try {
       HttpResponse<Void> response =
           httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
+      if(response.statusCode() == HTTP_NOT_FOUND) throw new FileNotFoundException("Wrong url or file not found. Got 404 http status code.");
       return response.headers()
           .firstValueAsLong("Content-Length")
           .orElseThrow(() -> new RuntimeException("Content length header not set"));

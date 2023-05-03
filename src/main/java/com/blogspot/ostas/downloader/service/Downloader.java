@@ -3,6 +3,7 @@ package com.blogspot.ostas.downloader.service;
 import static com.blogspot.ostas.downloader.util.Utils.bytesToHumanReadable;
 
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
+import com.blogspot.ostas.downloader.client.exception.FileNotFoundException;
 import com.blogspot.ostas.downloader.executor.AppThreadFactory;
 import com.blogspot.ostas.downloader.service.model.Chunk;
 import com.blogspot.ostas.downloader.service.model.DownloadResult;
@@ -132,6 +133,10 @@ public class Downloader {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (ExecutionException exception) {
+      if(exception.getCause() instanceof FileNotFoundException) {
+        log.error("{}", exception.getCause().getMessage());
+        return null;
+      }
       log.error("Execution error", exception);
     }
     return null;

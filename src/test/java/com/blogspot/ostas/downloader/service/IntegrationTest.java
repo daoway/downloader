@@ -13,12 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {"command.line.runner.enabled=false",
     "spring.main.web-application-type=servlet"})
 @RequiredArgsConstructor
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class IntegrationTest {
 
   @Autowired
@@ -42,4 +44,10 @@ class IntegrationTest {
     }
   }
 
+  @Test
+  void download_non_existent_file() {
+    var url = "http://localhost:%s/downloads/no-such-file-exists.txt".formatted(port);
+    downloader.download(url);
+    assertThat(new File("no-such-file-exists.txt").exists()).isFalse();
+  }
 }
