@@ -1,6 +1,7 @@
 package com.blogspot.ostas.downloader.client;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 import com.blogspot.ostas.downloader.client.exception.NoContentLengthException;
 import com.blogspot.ostas.downloader.client.exception.NoRangeStreamException;
@@ -38,6 +39,7 @@ public class DownloaderHttpClient {
       HttpResponse<Void> response =
           httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
       if(response.statusCode() == HTTP_NOT_FOUND) throw new FileNotFoundException("Wrong url or file not found. Got 404 http status code.");
+      if(response.statusCode() == HTTP_UNAVAILABLE) throw new NoContentLengthException("503 http status code obtaining content length");
       return response.headers()
           .firstValueAsLong("Content-Length")
           .orElseThrow(() -> new RuntimeException("Content length header not set"));
