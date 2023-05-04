@@ -100,4 +100,11 @@ class NginxIntegrationTest {
       }
     });
   }
+
+  @Test
+  void whenHttpHeadIsDisabled() {
+    var fileName = "file.out";
+    var url = "http://localhost:%s/upload/%s".formatted(nginx.getFirstMappedPort(), fileName);
+    downloader.download(url);
+  }
 }

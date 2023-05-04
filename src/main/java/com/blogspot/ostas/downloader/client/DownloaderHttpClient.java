@@ -1,5 +1,6 @@
 package com.blogspot.ostas.downloader.client;
 
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
@@ -17,11 +18,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Data
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class DownloaderHttpClient {
 
   private final FileService fileService;
@@ -38,8 +41,10 @@ public class DownloaderHttpClient {
     try {
       HttpResponse<Void> response =
           httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
+      log.info("Status code : {}",response.statusCode());
       if(response.statusCode() == HTTP_NOT_FOUND) throw new FileNotFoundException("Wrong url or file not found. Got 404 http status code.");
       if(response.statusCode() == HTTP_UNAVAILABLE) throw new NoContentLengthException("503 http status code obtaining content length");
+      if(response.statusCode() == HTTP_FORBIDDEN) throw new NoContentLengthException("403 http status code");
       return response.headers()
           .firstValueAsLong("Content-Length")
           .orElseThrow(() -> new RuntimeException("Content length header not set"));
