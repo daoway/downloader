@@ -48,6 +48,6 @@ class IntegrationTest {
   void download_non_existent_file() {
     var url = "http://localhost:%s/downloads/no-such-file-exists.txt".formatted(port);
     downloader.download(url);
-    assertThat(new File("no-such-file-exists.txt").exists()).isFalse();
+    assertThat(new File("no-such-file-exists.txt")).doesNotExist();
   }
 }

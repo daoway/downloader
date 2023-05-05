@@ -50,7 +50,7 @@ public class FileService {
   }
 
   public void mergeChunks(Set<Chunk> chunks, String outputFileName) {
-    var files = chunks.stream().map(chunk -> outputFileName + "." + chunk.index()).collect(Collectors.toList());
+    var files = chunks.stream().map(chunk -> outputFileName + "." + chunk.index()).toList();
     mergeFiles(files,outputFileName);
   }
 

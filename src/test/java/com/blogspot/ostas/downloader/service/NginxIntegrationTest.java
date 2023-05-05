@@ -107,6 +107,6 @@ class NginxIntegrationTest {
     var fileName = "file.out";
     var url = "http://localhost:%s/upload/%s".formatted(nginx.getFirstMappedPort(), fileName);
     downloader.download(url);
-    assertThat(new File(fileName).exists()).isFalse();
+    assertThat(new File(fileName)).doesNotExist();
   }
 }
