@@ -59,7 +59,7 @@ public class DownloaderHttpClient {
   public InputStream inputStreamOf(Chunk chunk) {
     HttpRequest httpRequest = HttpRequest.newBuilder()
         .uri(URI.create(url))
-        .header("Range", "bytes=%s-%s".formatted(chunk.getStart(), chunk.getEnd()))
+        .header("Range", "bytes=%s-%s".formatted(chunk.start(), chunk.end()))
         .GET()
         .build();
     try {

@@ -54,7 +54,7 @@ class RangeServiceTest {
     var chunks = rangeService.rangeIntervals(value, numberOfChunks);
     assertThat(chunks).hasSize(numberOfChunks);
     var brokenRanges =
-        chunks.stream().filter(chunk -> chunk.getStart() < 0 || chunk.getEnd() < 0).toList();
+        chunks.stream().filter(chunk -> chunk.start() < 0 || chunk.end() < 0).toList();
     assertThat(brokenRanges).isEmpty();
   }
 
@@ -65,7 +65,7 @@ class RangeServiceTest {
     var chunks = rangeService.rangeIntervals(value, numberOfChunks);
     assertThat(chunks).hasSize(numberOfChunks);
     var brokenRanges =
-        chunks.stream().filter(chunk -> chunk.getStart() < 0 || chunk.getEnd() < 0).toList();
+        chunks.stream().filter(chunk -> chunk.start() < 0 || chunk.end() < 0).toList();
     assertThat(brokenRanges).isEmpty();
   }
 

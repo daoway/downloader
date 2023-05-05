@@ -51,7 +51,7 @@ class DownloaderTest {
     int expectedContentLength = 0;
     var fileName = fileService.filename(downloaderHttpClient.getUrl());
     for (var chunk : chunks) {
-      byte[] chunkBytes = "contents of chunk number %s%n".formatted(chunk.getIndex())
+      byte[] chunkBytes = "contents of chunk number %s%n".formatted(chunk.index())
           .getBytes(StandardCharsets.UTF_8);
       expectedContentLength += chunkBytes.length;
       chunkInputStreams.put(chunk, new ByteArrayInputStream(chunkBytes));
@@ -69,7 +69,7 @@ class DownloaderTest {
       try {
         chunkInputStreams.get(chunk).close();
         chunkOutputStreams.get(chunk).close();
-        Files.delete(Path.of("%s.%d".formatted(fileName, chunk.getIndex())));
+        Files.delete(Path.of("%s.%d".formatted(fileName, chunk.index())));
       } catch (IOException exception) {
         throw new RuntimeException(exception);
       }

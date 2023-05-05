@@ -50,7 +50,7 @@ public class FileService {
   }
 
   public void mergeChunks(Set<Chunk> chunks, String outputFileName) {
-    var files = chunks.stream().map(chunk -> outputFileName + "." + chunk.getIndex()).collect(Collectors.toList());
+    var files = chunks.stream().map(chunk -> outputFileName + "." + chunk.index()).collect(Collectors.toList());
     mergeFiles(files,outputFileName);
   }
 
@@ -72,14 +72,14 @@ public class FileService {
 
   public OutputStream outputStreamFor(Chunk chunk, String filename) {
     try {
-      return Files.newOutputStream(Paths.get(filename + "." + chunk.getIndex()));
+      return Files.newOutputStream(Paths.get(filename + "." + chunk.index()));
     } catch (IOException exception) {
       throw new NoOutputStreamForChunkException(exception);
     }
   }
 
   public String chunkFileName(String url, Chunk chunk){
-    return "%s.%s".formatted(filename(url),chunk.getIndex());
+    return "%s.%s".formatted(filename(url),chunk.index());
   }
 
 }

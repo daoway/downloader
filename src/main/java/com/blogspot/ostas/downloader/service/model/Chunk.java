@@ -1,21 +1,8 @@
 package com.blogspot.ostas.downloader.service.model;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
+public record Chunk(long start, long end, int index) {
 
-@Data
-@EqualsAndHashCode
-@RequiredArgsConstructor
-public class Chunk {
-
-  private final long start;
-
-  private final long end;
-
-  private final long index;
-
-  public static Chunk of(long start, long end, long index) {
+  public static Chunk of(long start, long end, int index) {
     return new Chunk(start, end, index);
   }
 

@@ -3,9 +3,11 @@ package com.blogspot.ostas.downloader.util;
 import com.blogspot.ostas.downloader.persitence.model.UrlItem;
 import com.blogspot.ostas.downloader.persitence.model.DownloadTask;
 import com.blogspot.ostas.downloader.persitence.model.enums.TaskStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.info.GraphLayout;
 
+@Slf4j
 public class ObjectLayout {
   public static void main(String[] args) {
     DownloadTask downloadTask = new DownloadTask();
@@ -15,7 +17,7 @@ public class ObjectLayout {
     downloadTask.getUrls().add(UrlItem.of("http://localhoost:8080/3",3));
     downloadTask.setStatus(TaskStatus.IN_PROGRESS);
 
-    System.out.println(ClassLayout.parseInstance(downloadTask).toPrintable());
-    System.out.println(GraphLayout.parseInstance(downloadTask).toFootprint());
+    log.info(ClassLayout.parseInstance(downloadTask).toPrintable());
+    log.info(GraphLayout.parseInstance(downloadTask).toFootprint());
   }
 }

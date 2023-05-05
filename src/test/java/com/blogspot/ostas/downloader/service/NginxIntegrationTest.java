@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
 import com.blogspot.ostas.downloader.util.DownloadException;
+import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
@@ -92,7 +93,7 @@ class NginxIntegrationTest {
     assertThat(downloadResult.getChunkErrors()).isEmpty();
     //cleanup
     downloader.getChunks().forEach(chunk -> {
-      var file = fileService.filename(url) + "." + chunk.getIndex();
+      var file = fileService.filename(url) + "." + chunk.index();
       try {
         Files.deleteIfExists(Path.of(file));
       } catch (IOException exception) {
@@ -106,5 +107,6 @@ class NginxIntegrationTest {
     var fileName = "file.out";
     var url = "http://localhost:%s/upload/%s".formatted(nginx.getFirstMappedPort(), fileName);
     downloader.download(url);
+    assertThat(new File(fileName).exists()).isFalse();
   }
 }
