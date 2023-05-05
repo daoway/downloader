@@ -39,6 +39,8 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.openjdk.jol:jol-core:0.17'
 }
 
 tasks.named('test') {
@@ -100,4 +102,8 @@ snyk {
     api = System.getenv('SNYK_TOKEN') //https://app.snyk.io/registry/account?fromGitHubAuth=true
     autoDownload = true
     autoUpdate = true
+}
+
+tasks.withType(JavaExec) {
+    jvmArgs("-Djdk.attach.allowAttachSelf")
 }

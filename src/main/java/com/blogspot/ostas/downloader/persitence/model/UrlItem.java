@@ -10,19 +10,19 @@ import lombok.NoArgsConstructor;
 @Entity
 @Data
 @NoArgsConstructor
-public class DownloadItem {
+public class UrlItem {
   @Id
   @GeneratedValue(strategy = GenerationType.AUTO)
   private Long id;
   private String url;
-  private Long priority;
+  private Integer priority;
 
-  private DownloadItem(String url, Long priority) {
+  private UrlItem(String url, Integer priority) {
     this.url = url;
     this.priority = priority;
   }
 
-  public static DownloadItem of(String url, Long priority) {
-    return new DownloadItem(url, priority);
+  public static UrlItem of(String url, Integer priority) {
+    return new UrlItem(url, priority);
   }
 }
