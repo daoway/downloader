@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RangeServiceTest {
 
-  private RangeService rangeService  = Mockito.spy(new RangeService());
+  private final RangeService rangeService  = Mockito.spy(new RangeService());
 
   @Test
   void divideIntervals() {
