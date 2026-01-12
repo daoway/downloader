@@ -1,19 +1,16 @@
 package com.blogspot.ostas.downloader.service;
 
+import com.blogspot.ostas.downloader.service.model.Chunk;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.blogspot.ostas.downloader.service.model.Chunk;
-import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-@ExtendWith(SpringExtension.class)
 class RangeServiceTest {
 
-  @MockitoSpyBean
-  private RangeService rangeService;
+  private RangeService rangeService  = Mockito.spy(new RangeService());
 
   @Test
   void divideIntervals() {

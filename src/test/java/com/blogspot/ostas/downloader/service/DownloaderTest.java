@@ -15,14 +15,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @SpringBootTest(properties = {"command.line.runner.enabled=false"})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class DownloaderTest {
 
   @MockitoBean
@@ -95,11 +95,4 @@ class DownloaderTest {
     // then
     assertThat(chunks).containsExactly(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
   }
-
-  @BeforeEach
-  public void resetMocks() {
-    Mockito.reset(downloader); // reset the spy object
-    downloader = Mockito.spy(downloader); // re-spy the bean
-  }
-
 }
