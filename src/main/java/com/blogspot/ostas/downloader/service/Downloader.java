@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -53,10 +54,10 @@ public class Downloader {
     } while (!totalDownloadedBytes.compareAndSet(current, next));
   }
 
-  public DownloadResult downloadChunks(Set<Chunk> chunks) {
+  public DownloadResult downloadChunks(Set<Chunk> chunks, String url) {
     final var semaphore = new Semaphore(maxThreads);
     final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
-    final var filename = fileService.filename(downloaderHttpClient.getUrl());
+    final var filename = fileService.filename(url);
     final var futureChunks = new ArrayList<CompletableFuture<Void>>(chunks.size());
     chunks.forEach(chunk -> {
       var future = CompletableFuture.runAsync(
@@ -66,7 +67,7 @@ public class Downloader {
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
             }
-            fileService.saveToFile(downloaderHttpClient.inputStreamOf(chunk),
+            fileService.saveToFile(downloaderHttpClient.inputStreamOf(chunk, url),
                 fileService.outputStreamFor(chunk, filename),
                 this::handleChunkDownloadedBytesCount);
           },
@@ -83,7 +84,7 @@ public class Downloader {
     if (numberOfSuccessfulConcurrentDownloads != chunks.size()) {
       this.maxThreads = numberOfSuccessfulConcurrentDownloads;
       log.info("Semaphore set to {}",numberOfSuccessfulConcurrentDownloads);
-      return downloadChunks(chunkErrors.keySet());
+      return downloadChunks(chunkErrors.keySet(), url);
     } else {
       final var downloadResult = new DownloadResult();
       downloadResult.setTotalDownloaded(totalDownloadedBytes.get());
@@ -100,25 +101,24 @@ public class Downloader {
   }
 
   public DownloadResult download(String url) {
-    downloaderHttpClient.setUrl(url);
     CompletableFuture<Integer> threadsNumberFuture =
         CompletableFuture.supplyAsync(
             () -> setNumberOfThreads(Runtime.getRuntime().availableProcessors()));
     CompletableFuture<Long> contentLengthFuture =
-        CompletableFuture.supplyAsync(downloaderHttpClient::contentLength);
+        CompletableFuture.supplyAsync(() -> downloaderHttpClient.contentLength(url));
     CompletableFuture<DownloadResult> downloadSteps =
         threadsNumberFuture.thenCombineAsync(contentLengthFuture,
             (threadsNumber, downloadSize) -> {
               log.info("Downloading total bytes {} (~{})", downloadSize,
                   bytesToHumanReadable(downloadSize));
               return calculateChunks(downloadSize, threadsNumber);
-            }).thenApplyAsync(this::downloadChunks);
+            }).thenApplyAsync((chanks) -> downloadChunks(chanks, url));
     try {
       var downloadResult = downloadSteps.get();
       if (downloadResult.hasErrors()) {
         return downloadResult;
       } else {
-        var filename = fileService.filename(downloaderHttpClient.getUrl());
+        var filename = fileService.filename(url);
         fileService.mergeChunks(chunks, filename);
       }
       return downloadResult;

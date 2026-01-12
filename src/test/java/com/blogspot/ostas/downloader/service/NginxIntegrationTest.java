@@ -49,9 +49,6 @@ class NginxIntegrationTest {
     private FileService fileService;
 
     @Autowired
-    private DownloaderHttpClient downloaderHttpClient;
-
-    @Autowired
     private Downloader downloader;
 
     @AfterAll
@@ -64,7 +61,6 @@ class NginxIntegrationTest {
         final String url =
                 "http://localhost:%s/downloads/file.out".formatted(nginx.getFirstMappedPort());
         final int numberOfThreads = 3;
-        downloaderHttpClient.setUrl(url);
         List<String> downloadedFileNames = Collections.synchronizedList(new ArrayList<>());
 
         var errors = concurrentDownload(url, numberOfThreads, (u, index) -> {

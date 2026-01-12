@@ -41,25 +41,24 @@ class DownloaderTest {
     var threadsCount = downloader.setNumberOfThreads(Runtime.getRuntime().availableProcessors());
 
     // when
-    when(downloaderHttpClient.getUrl()).thenReturn(url);
-    when(downloaderHttpClient.contentLength()).thenReturn(contentLength);
+    when(downloaderHttpClient.contentLength(url)).thenReturn(contentLength);
     var chunks = downloader.calculateChunks(contentLength, threadsCount);
     Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
     Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
     int expectedContentLength = 0;
-    var fileName = fileService.filename(downloaderHttpClient.getUrl());
+    var fileName = fileService.filename(url);
     for (var chunk : chunks) {
       byte[] chunkBytes = "contents of chunk number %s%n".formatted(chunk.index())
           .getBytes(StandardCharsets.UTF_8);
       expectedContentLength += chunkBytes.length;
       chunkInputStreams.put(chunk, new ByteArrayInputStream(chunkBytes));
       chunkOutputStreams.put(chunk, new ByteArrayOutputStream());
-      when(downloaderHttpClient.inputStreamOf(chunk)).thenReturn(chunkInputStreams.get(chunk));
+      when(downloaderHttpClient.inputStreamOf(chunk, url)).thenReturn(chunkInputStreams.get(chunk));
       when(fileService.outputStreamFor(chunk, fileName)).thenReturn(
           chunkOutputStreams.get(chunk));
     }
 
-    var downloadResult = downloader.downloadChunks(chunks);
+    var downloadResult = downloader.downloadChunks(chunks, url);
     // then
     assertThat(downloadResult.getTotalDownloaded()).isEqualTo(expectedContentLength);
 
@@ -78,11 +77,11 @@ class DownloaderTest {
   @Test
   void calculateDownloadRanges() {
     // given
+    var url = "http://url.com";
     var threadsCount = downloader.setNumberOfThreads(3);
-    when(downloaderHttpClient.contentLength()).thenReturn(10L);
+    when(downloaderHttpClient.contentLength(url)).thenReturn(10L);
     // when
-    downloader.calculateChunks(downloaderHttpClient.contentLength(), threadsCount);
-    var chunks = downloader.getChunks();
+    var chunks = downloader.calculateChunks(downloaderHttpClient.contentLength(url), threadsCount);
     // then
     assertThat(chunks).containsExactly(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
   }

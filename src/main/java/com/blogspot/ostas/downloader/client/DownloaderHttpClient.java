@@ -31,9 +31,7 @@ public class DownloaderHttpClient {
 
   private final HttpClient httpClient;
 
-  private String url;
-
-  public long contentLength() {
+  public long contentLength(String url) {
     HttpRequest httpRequest = HttpRequest.newBuilder()
         .uri(URI.create(url))
         .method("HEAD", HttpRequest.BodyPublishers.noBody())
@@ -56,7 +54,7 @@ public class DownloaderHttpClient {
     return -1;
   }
 
-  public InputStream inputStreamOf(Chunk chunk) {
+  public InputStream inputStreamOf(Chunk chunk, String url) {
     HttpRequest httpRequest = HttpRequest.newBuilder()
         .uri(URI.create(url))
         .header("Range", "bytes=%s-%s".formatted(chunk.start(), chunk.end()))
