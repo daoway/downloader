@@ -73,14 +73,10 @@ public class DownloaderHttpClient {
       return httpResponse.body();
     } catch (IOException e) {
       throw new NoRangeStreamException(e);
-    } catch (InterruptedException e) {
+    } catch (InterruptedException _) {
       Thread.currentThread().interrupt();
     }
     return null;
-  }
-
-  public String getUrl() {
-    return url;
   }
 
 }

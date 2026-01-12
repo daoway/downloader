@@ -34,7 +34,6 @@ public class Downloader {
 
   private final AtomicLong totalDownloadedBytes = new AtomicLong(0);
   private ExecutorService executor;
-  private long contentLength = -1;
   private Set<Chunk> chunks;
 
   private int maxThreads;
@@ -96,10 +95,7 @@ public class Downloader {
   }
 
   public long getContentLength() {
-    if (this.contentLength == -1) {
-      contentLength = downloaderHttpClient.contentLength();
-    }
-    return this.contentLength;
+    return downloaderHttpClient.contentLength();
   }
 
   public Set<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
@@ -130,7 +126,7 @@ public class Downloader {
         fileService.mergeChunks(chunks, filename);
       }
       return downloadResult;
-    } catch (InterruptedException e) {
+    } catch (InterruptedException _) {
       Thread.currentThread().interrupt();
     } catch (ExecutionException exception) {
       if(exception.getCause() instanceof FileNotFoundException) {
