@@ -6,13 +6,13 @@ import com.blogspot.ostas.downloader.service.model.Chunk;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 class RangeServiceTest {
 
-  @SpyBean
+  @MockitoSpyBean
   private RangeService rangeService;
 
   @Test
