@@ -94,10 +94,6 @@ public class Downloader {
     }
   }
 
-  public long getContentLength() {
-    return downloaderHttpClient.contentLength();
-  }
-
   public Set<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
     this.chunks = rangeService.rangeIntervals(contentLength, numberOfChunks);
     return this.chunks;
@@ -109,7 +105,7 @@ public class Downloader {
         CompletableFuture.supplyAsync(
             () -> setNumberOfThreads(Runtime.getRuntime().availableProcessors()));
     CompletableFuture<Long> contentLengthFuture =
-        CompletableFuture.supplyAsync(this::getContentLength);
+        CompletableFuture.supplyAsync(downloaderHttpClient::contentLength);
     CompletableFuture<DownloadResult> downloadSteps =
         threadsNumberFuture.thenCombineAsync(contentLengthFuture,
             (threadsNumber, downloadSize) -> {

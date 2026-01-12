@@ -76,17 +76,10 @@ class DownloaderTest {
   }
 
   @Test
-  void getDownloadSize() {
-    when(downloaderHttpClient.contentLength()).thenReturn(100500L);
-    assertThat(downloader.getContentLength()).isEqualTo(100500);
-  }
-
-  @Test
   void calculateDownloadRanges() {
     // given
     var threadsCount = downloader.setNumberOfThreads(3);
     when(downloaderHttpClient.contentLength()).thenReturn(10L);
-    when(downloader.getContentLength()).thenReturn(10L);
     // when
     downloader.calculateChunks(downloaderHttpClient.contentLength(), threadsCount);
     var chunks = downloader.getChunks();
