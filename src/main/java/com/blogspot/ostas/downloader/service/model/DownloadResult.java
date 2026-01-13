@@ -14,6 +14,6 @@ public class DownloadResult {
   }
 
   public boolean hasErrors() {
-    return !chunkErrors.entrySet().isEmpty();
+    return !chunkErrors.isEmpty();
   }
 }
