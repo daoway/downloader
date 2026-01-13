@@ -1,9 +1,7 @@
 package com.blogspot.ostas.downloader.service;
 
-import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
 import com.blogspot.ostas.downloader.util.DownloadException;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,14 +31,16 @@ import static org.assertj.core.api.Assertions.fail;
 class NginxIntegrationTest {
 
     @Container
-    private static final GenericContainer<?> nginx = new GenericContainer<>(
-            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:latest")
-                    .run("apk add --update nginx")
-                    .cmd("nginx", "-g", "daemon off;")
-                    .build()))
-            .withClasspathResourceMapping("nginx.conf", "/etc/nginx/nginx.conf", BindMode.READ_ONLY)
-            .withFileSystemBind("./src/test/resources/public", "/var/www/html", BindMode.READ_ONLY)
-            .withExposedPorts(9999);
+    private static final GenericContainer<?> nginx =
+            new GenericContainer<>(
+                    new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder
+                            .from("alpine:latest")
+                            .run("apk add --update nginx")
+                            .cmd("nginx", "-g", "daemon off;")
+                            .build()))
+                    .withClasspathResourceMapping("nginx.conf", "/etc/nginx/nginx.conf", BindMode.READ_ONLY)
+                    .withFileSystemBind("./src/test/resources/public", "/var/www/html", BindMode.READ_ONLY)
+                    .withExposedPorts(9999);
 
     @Autowired
     private HttpClient httpClient;
@@ -51,59 +51,75 @@ class NginxIntegrationTest {
     @Autowired
     private Downloader downloader;
 
-    @AfterAll
-    static void cleanup() {
-        nginx.stop();
-    }
-
     @Test
     void serverConnectionLimit() {
         final String url =
                 "http://localhost:%s/downloads/file.out".formatted(nginx.getFirstMappedPort());
         final int numberOfThreads = 3;
+
         List<String> downloadedFileNames = Collections.synchronizedList(new ArrayList<>());
 
         var errors = concurrentDownload(url, numberOfThreads, (u, index) -> {
-            var file = fileService.filename(url) + "_" + index;
+            var file = fileService.filename(url) + "." + index;
+            System.out.println(file);
             downloadFile(url, file, httpClient);
-            synchronized (downloadedFileNames) {
-                downloadedFileNames.add(file);
-            }
+            downloadedFileNames.add(file);
         });
+
         assertThat(errors).hasSize(1);
-        assertThat(errors.getFirst()).isInstanceOf(DownloadException.class).hasMessage("Non OK code : 503");
+        assertThat(errors.getFirst())
+                .isInstanceOf(DownloadException.class)
+                .hasMessage("Non OK code : 503");
+
+        downloadedFileNames.forEach(file -> deleteIfExists(Path.of(file)));
         assertThat(downloadedFileNames).hasSize(2);
-        downloadedFileNames.forEach(file -> {
-            try {
-                Files.delete(Path.of(file));
-            } catch (IOException _) {
-                fail("No file for removal");
-            }
-        });
     }
 
     @Test
     void downloadFileWithConnectionLimit() {
         var fileName = "file.out";
-        var url = "http://localhost:%s/downloads/%s".formatted(nginx.getFirstMappedPort(), fileName);
+        var url = "http://localhost:%s/downloads/%s"
+                .formatted(nginx.getFirstMappedPort(), fileName);
+
         var downloadResult = downloader.download(url);
+
+        var baseName = fileService.filename(url);
+        deleteIfExists(Path.of(baseName));
+        deleteChunkFiles(baseName);
+
         assertThat(downloadResult.getChunkErrors()).isEmpty();
-        //cleanup
-        downloader.getChunks().forEach(chunk -> {
-            var file = fileService.filename(url) + "." + chunk.index();
-            try {
-                Files.deleteIfExists(Path.of(file));
-            } catch (IOException _) {
-                fail("Error removing partial downloads");
-            }
-        });
     }
 
     @Test
     void whenHttpHeadIsDisabled() {
         var fileName = "file.out";
-        var url = "http://localhost:%s/upload/%s".formatted(nginx.getFirstMappedPort(), fileName);
+        var url = "http://localhost:%s/upload/%s"
+                .formatted(nginx.getFirstMappedPort(), fileName);
+
         downloader.download(url);
+
         assertThat(new File(fileName)).doesNotExist();
+    }
+
+    private void deleteIfExists(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            fail("Error removing file " + file, e);
+        }
+    }
+
+    private void deleteChunkFiles(String baseName) {
+        try (var stream = Files.list(Path.of("."))) {
+            stream
+                    .filter(p -> p.getFileName().toString().startsWith(baseName + "."))
+                    .peek(x -> {
+                        System.out.println(x);
+                    })
+                    .forEach(this::deleteIfExists);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

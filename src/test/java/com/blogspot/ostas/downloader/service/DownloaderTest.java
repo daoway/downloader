@@ -7,14 +7,15 @@ import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
 import com.blogspot.ostas.downloader.service.model.Chunk;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,66 +24,79 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 @SpringBootTest(properties = {"command.line.runner.enabled=false"})
 class DownloaderTest {
 
-  @MockitoBean
-  private DownloaderHttpClient downloaderHttpClient;
+    @MockitoBean
+    private DownloaderHttpClient downloaderHttpClient;
 
-  @MockitoSpyBean
-  private Downloader downloader;
+    @MockitoSpyBean
+    private Downloader downloader;
 
-  @MockitoSpyBean
-  private FileService fileService;
+    @MockitoSpyBean
+    private FileService fileService;
 
-  @Test
-  @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-  void download() {
-    // given
-    var url = "http://dummy-url-used-for-testing.com/test.out";
-    long contentLength = 224;
-    var threadsCount = downloader.setNumberOfThreads(Runtime.getRuntime().availableProcessors());
+    @Test
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    void downloadChunks_downloadsAllChunksAndCountsBytes() {
+        // given
+        var url = "http://dummy-url-used-for-testing.com/test.out";
+        long contentLength = 224;
+        int threadsCount = Runtime.getRuntime().availableProcessors();
 
-    // when
-    when(downloaderHttpClient.contentLength(url)).thenReturn(contentLength);
-    var chunks = downloader.calculateChunks(contentLength, threadsCount);
-    Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
-    Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
-    int expectedContentLength = 0;
-    var fileName = fileService.filename(url);
-    for (var chunk : chunks) {
-      byte[] chunkBytes = "contents of chunk number %s%n".formatted(chunk.index())
-          .getBytes(StandardCharsets.UTF_8);
-      expectedContentLength += chunkBytes.length;
-      chunkInputStreams.put(chunk, new ByteArrayInputStream(chunkBytes));
-      chunkOutputStreams.put(chunk, new ByteArrayOutputStream());
-      when(downloaderHttpClient.inputStreamOf(chunk, url)).thenReturn(chunkInputStreams.get(chunk));
-      when(fileService.outputStreamFor(chunk, fileName)).thenReturn(
-          chunkOutputStreams.get(chunk));
+        when(downloaderHttpClient.contentLength(url)).thenReturn(contentLength);
+
+        Set<Chunk> chunks = downloader.calculateChunks(contentLength, threadsCount);
+
+        Map<Chunk, InputStream> chunkInputStreams = new ConcurrentHashMap<>();
+        Map<Chunk, OutputStream> chunkOutputStreams = new ConcurrentHashMap<>();
+
+        int expectedContentLength = 0;
+        var fileName = fileService.filename(url);
+
+        for (var chunk : chunks) {
+            byte[] chunkBytes =
+                    "contents of chunk number %s%n".formatted(chunk.index())
+                            .getBytes(StandardCharsets.UTF_8);
+
+            expectedContentLength += chunkBytes.length;
+
+            chunkInputStreams.put(chunk, new ByteArrayInputStream(chunkBytes));
+            chunkOutputStreams.put(chunk, new ByteArrayOutputStream());
+
+            when(downloaderHttpClient.inputStreamOf(chunk, url))
+                    .thenReturn(chunkInputStreams.get(chunk));
+
+            when(fileService.outputStreamFor(chunk, fileName))
+                    .thenReturn(chunkOutputStreams.get(chunk));
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+        AtomicLong totalDownloaded = new AtomicLong(0);
+
+        // when
+        var downloadResult =
+                downloader.downloadChunks(chunks, url, executor, totalDownloaded, threadsCount);
+
+        executor.shutdown();
+
+        // then
+        assertThat(downloadResult.getTotalDownloaded()).isEqualTo(expectedContentLength);
+        assertThat(downloadResult.hasErrors()).isFalse();
     }
 
-    var downloadResult = downloader.downloadChunks(chunks, url);
-    // then
-    assertThat(downloadResult.getTotalDownloaded()).isEqualTo(expectedContentLength);
+    @Test
+    void calculateDownloadRanges() {
+        // given
+        long contentLength = 10L;
+        int threadsCount = 3;
 
-    for (var chunk : chunks) {
-      try {
-        chunkInputStreams.get(chunk).close();
-        chunkOutputStreams.get(chunk).close();
-        Files.delete(Path.of("%s.%d".formatted(fileName, chunk.index())));
-      } catch (IOException exception) {
-        throw new RuntimeException(exception);
-      }
+        // when
+        var chunks = downloader.calculateChunks(contentLength, threadsCount);
+
+        // then
+        assertThat(chunks)
+                .containsExactly(
+                        Chunk.of(0, 3, 0),
+                        Chunk.of(4, 7, 1),
+                        Chunk.of(8, 9, 2)
+                );
     }
-
-  }
-
-  @Test
-  void calculateDownloadRanges() {
-    // given
-    var url = "http://url.com";
-    var threadsCount = downloader.setNumberOfThreads(3);
-    when(downloaderHttpClient.contentLength(url)).thenReturn(10L);
-    // when
-    var chunks = downloader.calculateChunks(downloaderHttpClient.contentLength(url), threadsCount);
-    // then
-    assertThat(chunks).containsExactly(Chunk.of(0, 3, 0), Chunk.of(4, 7, 1), Chunk.of(8, 9, 2));
-  }
 }
