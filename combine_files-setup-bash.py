@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 # Назви вихідних файлів
 script_filename = "setup.bash"
@@ -41,7 +42,6 @@ exclude_list = {
     'ai_prompt.txt',
     'create_context.py',
     'setup.bash',
-    'ai_prompt.txt',
     'result_content.txt',
     '.git',
     '.terraform',
@@ -107,18 +107,17 @@ def generate_context():
 
     # 1. Формуємо вміст setup.bash у пам'яті
     bash_content.append("#!/bin/bash\n")
-    bash_content.append("echo 'Starting project scaffolding...'\n\n")
 
     # Рекурсивний обхід
     for root, dirs, files in os.walk('.'):
         # Фільтрація папок
         dirs[:] = [d for d in dirs if d not in exclude_list]
-        
+
         for filename in files:
             if filename in exclude_list:
                 continue
-            
-            # Перевірка розширень (можна додати за потреби)
+
+            # Перевірка розширень
             if filename.endswith(('.pyc', '.exe', '.dll')):
                 continue
 
@@ -141,35 +140,41 @@ def generate_context():
                     bash_content.append("\n")
                 bash_content.append("EOF\n\n")
 
-                print(f"Додано: {relative_path}")
+                print(f"Додано до контексту: {relative_path}")
                 files_added += 1
-                
+
             except (UnicodeDecodeError, PermissionError):
-                # Пропускаємо бінарні або заблоковані файли
                 continue
             except Exception as e:
                 print(f"Помилка з {relative_path}: {e}")
 
-    bash_content.append("echo 'Scaffolding complete!'\n")
-    
     full_bash_text = "".join(bash_content)
 
-    # 2. Зберігаємо setup.bash
+    # 2. Зберігаємо файли
     with open(script_filename, "w", encoding="utf-8", newline='\n') as f_bash:
         f_bash.write(full_bash_text)
 
-    # 3. Зберігаємо ai_prompt.txt (Промпт + Баш)
-    with open(prompt_filename, "w", encoding="utf-8") as f_prompt:
+    with open(prompt_filename, "w", encoding="utf-8", newline='\n') as f_prompt:
         f_prompt.write(user_prompt_text)
         f_prompt.write("\n" + "#" * 80 + "\n")
         f_prompt.write(f"### ATTACHED setup.bash CONTENT:\n")
         f_prompt.write("#" * 80 + "\n\n")
         f_prompt.write(full_bash_text)
 
+    # 3. Викликаємо unix2dos для перетворення форматів
+    print(f"\n{'-'*10} Конвертація в DOS формат {'-'*10}")
+    for target in [script_filename, prompt_filename]:
+        try:
+            # check=True викине помилку, якщо unix2dos не встановлено
+            subprocess.run(['unix2dos', target], check=True, capture_output=True)
+            print(f"OK: {target} конвертовано.")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print(f"Увага: Не вдалося викликати unix2dos для {target}. Перевірте, чи встановлена утиліта.")
+
     print(f"\n{'-'*40}")
     print(f"Успіх!")
-    print(f"- Файл для запуску: {script_filename}")
-    print(f"- Текст для ChatGPT: {prompt_filename}")
+    print(f"- Скрипт: {script_filename}")
+    print(f"- Промпт: {prompt_filename}")
     print(f"Всього файлів упаковано: {files_added}")
 
 if __name__ == "__main__":
