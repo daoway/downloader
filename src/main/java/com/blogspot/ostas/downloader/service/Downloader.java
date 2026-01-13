@@ -112,7 +112,7 @@ public class Downloader {
               log.info("Downloading total bytes {} (~{})", downloadSize,
                   bytesToHumanReadable(downloadSize));
               return calculateChunks(downloadSize, threadsNumber);
-            }).thenApplyAsync((chanks) -> downloadChunks(chanks, url));
+            }).thenApplyAsync(parts -> downloadChunks(parts, url));
     try {
       var downloadResult = downloadSteps.get();
       if (downloadResult.hasErrors()) {
