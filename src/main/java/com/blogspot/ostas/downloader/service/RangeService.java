@@ -13,7 +13,7 @@ public class RangeService {
         if (value <= 0 || numberOfChunks <= 0) {
             throw new IllegalArgumentException("Invalid range");
         }
-        var chunkSize = (long) Math.ceil((double) value / numberOfChunks);
+        long chunkSize = (long) Math.ceil((double) value / numberOfChunks);
         Set<Chunk> chunks = LinkedHashSet.newLinkedHashSet(numberOfChunks);
         long start;
         long end;
