@@ -94,9 +94,6 @@ exclude_list = {
     'build.gradle',
     'gradle.properties',
     'exception',
-    'AppExceptionHandler.java',
-    'AppThreadFactory.java',
-    'DownloadException.java',
     'application.yml',
     os.path.basename(__file__)
 }

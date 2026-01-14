@@ -1,47 +1,40 @@
 package com.blogspot.ostas.downloader.service.impl;
 
-import static com.blogspot.ostas.downloader.util.Utils.bytesToHumanReadable;
-
 import com.blogspot.ostas.downloader.client.DownloaderHttpClient;
-import com.blogspot.ostas.downloader.executor.AppThreadFactory;
 import com.blogspot.ostas.downloader.service.Downloader;
 import com.blogspot.ostas.downloader.service.FileService;
 import com.blogspot.ostas.downloader.service.RangeService;
 import com.blogspot.ostas.downloader.service.model.Chunk;
 import com.blogspot.ostas.downloader.service.model.DownloadResult;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicLong;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static com.blogspot.ostas.downloader.util.Utils.bytesToHumanReadable;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DownloaderImpl implements Downloader {
 
-  private final DownloaderHttpClient downloaderHttpClient;
+    private final DownloaderHttpClient downloaderHttpClient;
+    private final RangeService rangeService;
+    private final FileService fileService;
+    private final ExecutorService downloaderExecutor;
 
-  private final RangeService rangeService;
-
-  private final FileService fileService;
-
-  @Override
-  public DownloadResult downloadChunks(
-          Set<Chunk> chunks,
-          String url,
-          ExecutorService executor,
-          AtomicLong totalDownloadedBytes,
-          int maxThreads
-  ) {
+    @Override
+    public DownloadResult downloadChunks(
+            Set<Chunk> chunks,
+            String url,
+            ExecutorService executor,
+            AtomicLong totalDownloadedBytes,
+            int maxThreads
+    ) {
         final var semaphore = new Semaphore(maxThreads);
         final var chunkErrors = new ConcurrentHashMap<Chunk, Throwable>();
         final var filename = fileService.filename(url);
@@ -73,7 +66,7 @@ public class DownloaderImpl implements Downloader {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         if (!chunkErrors.isEmpty()) {
-            int newThreads = chunks.size() - chunkErrors.size();
+            int newThreads = Math.max(1, chunks.size() - chunkErrors.size());
             log.info("Retry failed chunks with {} threads", newThreads);
 
             return downloadChunks(
@@ -81,7 +74,7 @@ public class DownloaderImpl implements Downloader {
                     url,
                     executor,
                     totalDownloadedBytes,
-                    Math.max(1, newThreads)
+                    newThreads
             );
         }
 
@@ -91,11 +84,10 @@ public class DownloaderImpl implements Downloader {
         return result;
     }
 
-
     @Override
     public Set<Chunk> calculateChunks(long contentLength, int numberOfChunks) {
         return rangeService.rangeIntervals(contentLength, numberOfChunks);
-  }
+    }
 
     @Override
     public DownloadResult download(String url) {
@@ -112,26 +104,19 @@ public class DownloaderImpl implements Downloader {
                     log.info("Downloading total bytes {} (~{})",
                             size, bytesToHumanReadable(size));
 
-                    var executor = Executors.newFixedThreadPool(threads, new AppThreadFactory());
                     var totalDownloaded = new AtomicLong(0);
                     var chunks = calculateChunks(size, threads);
+                    var result = downloadChunks(
+                            chunks, url, downloaderExecutor, totalDownloaded, threads
+                    );
 
-                    try {
-                        var result = downloadChunks(
-                                chunks, url, executor, totalDownloaded, threads
-                        );
-
-                        if (!result.hasErrors()) {
-                            var filename = fileService.filename(url);
-                            fileService.mergeChunks(chunks, filename);
-                        }
-
-                        return result;
-                    } finally {
-                        executor.shutdown();
+                    if (!result.hasErrors()) {
+                        var filename = fileService.filename(url);
+                        fileService.mergeChunks(chunks, filename);
                     }
-                });
 
+                    return result;
+                });
         try {
             return resultFuture.get();
 
